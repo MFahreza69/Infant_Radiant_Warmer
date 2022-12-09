@@ -378,7 +378,7 @@ void PID_control(){
 }
 
 void generate_pulse(){
-  if(start == 0 && pulsa <= 19){ //20
+  if(start == 0 && pulsa <= 9){ //20
     if(millis() - timePulse > 2 && highState == 0){
       digitalWrite(clkOut, HIGH);     
       timePulse = millis();
@@ -403,7 +403,7 @@ void generate_pulse(){
 }
 
 void sample_data(){
-    if(pulsa > 19){ //20
+    if(pulsa > 9){ //20
       digitalWrite(clkOut, LOW);
         if(millis() - generateData > 100 && sampleState == 0){
           for(halfBit = 0; halfBit < 10; halfBit++){
