@@ -16,14 +16,14 @@ uint8_t current = 0;
 uint8_t last = 0;
 uint16_t sense1;
 uint16_t sense2;
-String dataArray3[10];
+String dataArray3[12];
 int r = random(0, 1023);
 
 
-/*konversi ADC ke Biner 10bit*/
+/*convertion ADC value to Binary 12bit*/
 void convert_tobinary(int input){
   dat = 0;
-  for(a=512; a>=1; a=a/2){ 
+  for(a=2048; a>=1; a=a/2){ 
     if((input-a)>=0){
       dataArray3[dat]= '1';
       input-=a; 
@@ -34,11 +34,10 @@ void convert_tobinary(int input){
     dat++;  
   }
 }
-/*end konversi adc to biner*/
+/*end convertion adc to binary*/
 
-/*Send data sensor 10bit biner ke optocoupler*/
+/*Send sensor's data 12bit to optocoupler*/
 void send_data(){
-//  mean();
   last = current;
   current = digitalRead(clkIn);
   if(last == 0 && current == 1){
@@ -48,7 +47,7 @@ void send_data(){
      Serial.print(b);
      Serial.println("-");
   }
-  if(b > 10){ //20
+  if(b > 12){ //20
      b = 0;
      lowvar = 1;
      current = 0;
@@ -71,8 +70,18 @@ void send_data(){
 void which_sensor(){
   sense1 = analogRead(highSensor);
   sense2 = analogRead(lowSensor);
+  uint16_t avr_temp;
+  float all_temp;
   if(sense1 >= 1023 && sense2 != 0){
-    dataSensor = sense2;
+    // dataSensor = sense2;
+    avr_temp = sense2;
+    all_temp = ((-0.001*(pow(avr_temp, 2))) + (18*avr_temp) + 24125)/1000;
+      if(avr_temp <= 20){
+        dataSensor = 0;
+      }
+      else{
+        dataSensor = all_temp;
+      }
   }
   else if(sense1 < 1023 && sense2 != 0){
     dataSensor = sense1;
@@ -91,6 +100,7 @@ void setup(){
   pinMode(clkIn, INPUT);
   pinMode(highSensor, INPUT);
   pinMode(lowSensor, INPUT);
+  convert_tobinary(dataSensor);
 //    delay(1000);
     b = 0;
 }
