@@ -9,6 +9,7 @@
 /*Define Pins*/          /*Select Pin*/
 #define clkOut                52 /*PF7*/
 #define dataIn                51 /*PF6*/
+#define speakerPin            8
 #define buzzerPin             7 /*PE7*/
 #define heaterPin             4 /*PE4*/
 #define relayPin              12 /*PB4*/
@@ -123,6 +124,7 @@ uint8_t timeHours;
 int intrCount;
 unsigned long incskinTime;
 unsigned long decskinTime;
+unsigned long lastTime3;
 float holdSkin;
 bool debugMode = 0;
 float sumSkin  = 0;
@@ -141,6 +143,7 @@ unsigned long k;
 unsigned long l;
 unsigned long i;
 uint8_t o;
+unsigned long p;
 uint8_t alarm[5] = {0,0,0,0,0};
 uint8_t sAlarm[5] = {0,0,0,0,0};
 bool sunyiValue = 0;
@@ -150,6 +153,7 @@ bool alarmValue2 = 0;
 bool sirenAlarm = 0;
 unsigned long debugTimer;
 bool alarmRst = 0;
+bool loopAlarm = 0;
 
 
 Radiant Radiant_Warmer;
@@ -235,8 +239,8 @@ void btn_menu(){
       if(lastPower1 == HIGH && currentPower1 == LOW){
         if(modeSelect == 1 && modeControl == 0){ 
           displaysetTemp = displaysetTemp - 0.1;
-            if(displaysetTemp <= 25){
-                displaysetTemp = 25;
+            if(displaysetTemp <= 34){
+                displaysetTemp = 34;
             }
           }
         if(modeSelect == 2 && modeControl == 0){
@@ -250,8 +254,8 @@ void btn_menu(){
         if(modeSelect == 1 && modeControl == 0){
           if(millis() - decskinTime > 2000){  
             displaysetTemp = displaysetTemp - 0.02;
-            if(displaysetTemp <= 25){
-              displaysetTemp = 25;
+            if(displaysetTemp <= 34){
+              displaysetTemp = 34;
             }
           }
         }  
@@ -392,7 +396,7 @@ void btn_menu(){
       alarmRst = 1;
     }
   }
-  if(millis - p > 20000){
+  if(millis() - p > 20000){
     alarmRst = 0;
   }
   //END RESET ALARM FUNCTION
@@ -442,16 +446,23 @@ void digit_value(){
 /*Displaying value to each seven segment digits*/ 
 void digit_display(){ 
   digit_value();
-  //display skin Temp
-  if(debugMode == 0){   
+  if(debugMode == 0){  
+    if(modeSelect == 1 || modeControl == 1){
+    //display set skin temp
+      lc.setDigit(1, 6, digit4, false);    
+      lc.setDigit(1, 4, digit5, true);     
+      lc.setDigit(1, 0, digit6, false);
+    }
+    if(modeSelect == 2 || modeControl == 2){
+      lc.setChar(1, 6, '-', false);
+      lc.setChar(1, 4, '-', true);
+      lc.setChar(1, 0, '-', false);
+    } 
+
+    //display skin Temp
     lc.setDigit(1, 1, digit1, false);    
     lc.setDigit(1, 5, digit2, true);     
     lc.setDigit(1, 7, digit3, false);
-
-  //display set skin temp
-    lc.setDigit(1, 6, digit4, false);    
-    lc.setDigit(1, 4, digit5, true);     
-    lc.setDigit(1, 0, digit6, false);
 
   //displayTimer
     lc.setDigit(0, 1, digit7, false);    
@@ -473,7 +484,7 @@ void digit_display(){
     }
  } 
 
- if(debugMode == 0){
+ if(debugMode == 1){
   //display skin temp debug Mode
     lc.setDigit(1, 1, digit1, false);    
     lc.setDigit(1, 5, digit2, true);     
@@ -499,6 +510,7 @@ void read_skin_temperature(){
     babyskinTemp = (float(convertSkin)/100);
     if(millis()-tcal > 1000){
       skinTemp = babyskinTemp;
+      // tcal = millis();
     }
   }
   if(read_skin_temp0 <= 21){
@@ -523,13 +535,13 @@ void set_pwm(uint8_t heat){
 void PID_control(){
   errorSkin = (setPoint*10) - (babyskinTemp*10);
   if(error0 == 0 && error1 == 0 && error2 == 0 && error3 == 0){
-    if(modeControl == 1 && errorSkin > 2){
+    if(modeControl == 1 && errorSkin > 4){
       digitalWrite(relayPin, HIGH);
       input = babyskinTemp;
       myPID.Compute();
       set_pwm(outHeater);
     }
-    else if(modeControl == 1 && errorSkin <= 2){
+    else if(modeControl == 1 && errorSkin <= 4){
       digitalWrite(relayPin, HIGH);
       run_control();
       outHeater = heaterPwm;
@@ -543,38 +555,41 @@ void PID_control(){
   }
 }
 
-
+//Alarm trigger
 void alarm_control(){
   if(sirenAlarm == 1){
     if(alarmValue2 == 0){
+      noTone(buzzerPin);
       if(millis() - lastTime3 > 1000 && loopAlarm == 0){
         lastTime3 = millis();
         loopAlarm = 1;
-        tone(pinBuzzer, 2200);
+        // tone(buzzerPin, 2200);
+        digitalWrite(speakerPin, HIGH);
       }
       if(millis() - lastTime3 > 1000 && loopAlarm == 1){
         lastTime3 = millis();
         loopAlarm = 0;
-        noTone(pinBuzzer);
+        // noTone(buzzerPin);
+        digitalWrite(speakerPin, LOW);
       }
     }
     if(alarmValue2 == 1){
+      digitalWrite(speakerPin, LOW);
       if(millis() - lastTime3 > 1000 && loopAlarm == 0){
         lastTime3 = millis();
         loopAlarm = 1;
-        tone(pinBuzzer, 2300);
+        tone(buzzerPin, 2300);
       }
-      if(millis() - lastTime3 > 1000 && loopAlarm == 0){
+      if(millis() - lastTime3 > 1000 && loopAlarm == 1){
         lastTime3 = millis();
         loopAlarm = 0;
-        tone(pinBuzzer, 1800);
+        tone(buzzerPin, 1800);
       }
     }
-  }else{noTone(pinBuzzer);
+  }else{noTone(buzzerPin);
  }
 }
-
-/*End Control Function*/
+/*End Control and Alarm Function*/
 
 /*atTiny1616 Communication*/
 //Generating 10 pulse with 2ms time each high and low condition
@@ -635,6 +650,7 @@ void read_error(){
   if(alarmRst == 0){
     //Power Failure
     // powerIn = digitalRead();
+    
     if(millis() - startup > 5000){
       if(rstAlarm == 0){
       //Probe Missing
@@ -830,15 +846,15 @@ void setup(){
   myPID.SetOutputLimits(0, 255);
   myPID.SetMode(AUTOMATIC);
 
-/*initialize timer register*/
+/*initialize timer register for generating RTC*/
   cli();
   TCCR0 = 0;        //stop timer 0
   TIMSK = 0;        //disable timer 0 interrupt
   ASSR |= 1 << AS0; //select asynchronous operation timer0
   TCNT0 = 0;        //clear timer 0 interrupt 
   TCCR0 = (1 << WGM01)|(1 << CS02)|(1 << CS01)|(0 << CS00); //prescaler 256
-  while(ASSR & ((1 << TCN0UB)|(1 << TCR0UB))); //wait tcn and tcr cleared
-  OCR0 = 1.28;
+  while(ASSR & ((1 << TCN0UB)|(1 << OCR0UB)|(1 << TCR0UB))); //wait tcn and tcr cleared
+  OCR0 = 1.28; //antara 128/1.28 
   TIFR = (1 << OCF0); //clear interrupt flag
   TIMSK = (1 << OCIE0);
   sei();
@@ -857,7 +873,7 @@ void loop(){
 }
 
  //interrupt routine
-ISR(TIMER0_COMPA_vect){
+ISR(TIMER0_COMP_vect){
   if(timeMode == 1){
     if(intrCount == 100){ 
       if(timeMode == 1){
