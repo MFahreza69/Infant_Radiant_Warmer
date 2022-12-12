@@ -124,7 +124,8 @@ int intrCount;
 unsigned long incskinTime;
 unsigned long decskinTime;
 float holdSkin;
-bool debugMode;
+bool debugMode = 0;
+float sumSkin  = 0;
 
 //Isolation communication Value
 uint8_t pulsa = 0;
@@ -350,7 +351,7 @@ void btn_menu(){
       else if(millis() - debugTimer > 7000 && debugMode == 1){
         sumSkin = holdSkin - skinTemp;
         debugMode = 0;
-        debugTimer = millis;
+        debugTimer = millis();
       }
     }
   //END DEBUG MODE BUTTON
@@ -361,7 +362,7 @@ void btn_menu(){
       l = millis();
       if(millis() - k < 60000){
         sunyiValue = 1;
-        digitalWrite = (silenceLed, LOW);
+        digitalWrite(silenceLed, LOW);
       }
       if(millis() - l > 350 && i == 0){
         last_sunyi_value = 1;
@@ -376,7 +377,7 @@ void btn_menu(){
     }
     if(millis() - k > 60000){
       sunyiValue = 0;
-      digitalWrite = (silenceLed, HIGH);
+      digitalWrite(silenceLed, HIGH);
       k = millis();
     } 
   //END SILENCE ALARM BUTTON
@@ -387,7 +388,7 @@ void btn_menu(){
 /*value of  each digits seven segment*/
 void digit_value(){
   if(debugMode == 0){
-    displayskinTemp = skinTemp;
+    displayskinTemp = skinTemp + sumSkin;
   }
   if(debugMode == 1){
     displayskinTemp = holdSkin;
