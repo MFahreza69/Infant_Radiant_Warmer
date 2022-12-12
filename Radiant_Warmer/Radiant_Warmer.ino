@@ -149,6 +149,7 @@ int alarmValue = 0;
 bool alarmValue2 = 0;
 bool sirenAlarm = 0;
 unsigned long debugTimer;
+bool alarmRst = 0;
 
 
 Radiant Radiant_Warmer;
@@ -381,6 +382,20 @@ void btn_menu(){
       k = millis();
     } 
   //END SILENCE ALARM BUTTON
+
+  //RESET ALARM FUNCTION
+  lastPower7 = currentPower7;
+  currentPower7 = digitalRead(resetAlarm);
+  if(lastPower7 == HIGH && currentPower7 == LOW){
+    p = millis();
+    if(millis() - p < 20000){
+      alarmRst = 1;
+    }
+  }
+  if(millis - p > 20000){
+    alarmRst = 0;
+  }
+  //END RESET ALARM FUNCTION
 }
 /*end fucntion of each button session*/
 
@@ -523,11 +538,42 @@ void PID_control(){
     else if(modeControl == 0){
       digitalWrite(relayPin, LOW);
     }
-  }
-  else{
+  }else{
     digitalWrite(relayPin, LOW);
   }
 }
+
+
+void alarm_control(){
+  if(sirenAlarm == 1){
+    if(alarmValue2 == 0){
+      if(millis() - lastTime3 > 1000 && loopAlarm == 0){
+        lastTime3 = millis();
+        loopAlarm = 1;
+        tone(pinBuzzer, 2200);
+      }
+      if(millis() - lastTime3 > 1000 && loopAlarm == 1){
+        lastTime3 = millis();
+        loopAlarm = 0;
+        noTone(pinBuzzer);
+      }
+    }
+    if(alarmValue2 == 1){
+      if(millis() - lastTime3 > 1000 && loopAlarm == 0){
+        lastTime3 = millis();
+        loopAlarm = 1;
+        tone(pinBuzzer, 2300);
+      }
+      if(millis() - lastTime3 > 1000 && loopAlarm == 0){
+        lastTime3 = millis();
+        loopAlarm = 0;
+        tone(pinBuzzer, 1800);
+      }
+    }
+  }else{noTone(pinBuzzer);
+ }
+}
+
 /*End Control Function*/
 
 /*atTiny1616 Communication*/
@@ -586,17 +632,18 @@ void sample_data(){
 /*Error and Alarm Triggering Session*/
 void read_error(){         
   errorSkin = (setPoint*10) - (babyskinTemp*10);
-  //Power Failure
-  // powerIn = digitalRead();
-  if(millis() - startup > 5000){
-    if(rstAlarm == 0){
-    //Probe Missing
-      if(babyskinTemp == 0){
+  if(alarmRst == 0){
+    //Power Failure
+    // powerIn = digitalRead();
+    if(millis() - startup > 5000){
+      if(rstAlarm == 0){
+      //Probe Missing
+        if(babyskinTemp == 0){
         error0 = 1;
-      }
-      if(babyskinTemp != 0){
-        error0 = 0;
-      }
+        }
+        if(babyskinTemp != 0){
+          error0 = 0;
+        }
 
     //Temperature Deviation
       if(modeControl == 1){
@@ -624,6 +671,13 @@ void read_error(){
         error2 = 0;
       }
     }
+   }
+  }
+  if(alarmRst == 1){
+    error0 = 0;
+    error1 = 0;
+    error2 = 0;
+    error3 = 0;
   }
 
   // LED Triggered 
