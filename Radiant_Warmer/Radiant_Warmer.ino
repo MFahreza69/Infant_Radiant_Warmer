@@ -121,6 +121,10 @@ uint8_t timeSecond;
 uint8_t timeMinute;
 uint8_t timeHours;
 int intrCount;
+unsigned long incskinTime;
+unsigned long decskinTime;
+float holdSkin;
+bool debugMode;
 
 //Isolation communication Value
 uint8_t pulsa = 0;
@@ -132,7 +136,18 @@ uint16_t dataSensor;
 uint8_t halfBit;
 int dataArray[10];
 bool start = 1;
-
+unsigned long k;
+unsigned long l;
+unsigned long i;
+uint8_t o;
+uint8_t alarm[5] = {0,0,0,0,0};
+uint8_t sAlarm[5] = {0,0,0,0,0};
+bool sunyiValue = 0;
+bool last_sunyi_value = 0;
+int alarmValue = 0;
+bool alarmValue2 = 0;
+bool sirenAlarm = 0;
+unsigned long debugTimer;
 
 
 Radiant Radiant_Warmer;
@@ -143,10 +158,25 @@ SimpleTimer timer1;
 SimpleTimer timer2;
 SimpleTimer timer3;
 
+/*Function of each Button session*/
 void btn_menu(){
-    //mode select 
+    lastPower0 = currentPower0;
+    lastPower1 = currentPower1;
+    lastPower2 = currentPower2;
+    lastPower3 = currentPower3;
+    lastPower4 = currentPower4;
     lastPower5 = currentPower5;
+    lastPower6 = currentPower6;
+    currentPower0 = digitalRead(incTemp);
+    currentPower1 = digitalRead(decTemp);
+    currentPower2 = digitalRead(settempBtn);
+    currentPower3 = digitalRead(startTimer);
+    currentPower4 = digitalRead(resetTimer);
     currentPower5 = digitalRead(modeBtn);
+    currentPower6 = digitalRead(silenceAlarm);
+
+  if(debugMode == 0){
+  //MODE SELECT BUTTON  
     if(lastPower5 == HIGH && currentPower5 == LOW){
         modeSelect++;
         modeControl = 0;
@@ -169,9 +199,9 @@ void btn_menu(){
           modeSelect = 1;
         }
     }  
-    //end mode select
-    lastPower0 = currentPower0;
-    currentPower0 = digitalRead(incTemp);
+  //END MODE SELECT BUTTON
+
+  //INCREMENT AND DECREMENT BUTTON
       if(lastPower0 == HIGH && currentPower0 == LOW){
         if(modeSelect == 1 && modeControl == 0){
            displaysetTemp = displaysetTemp + 0.1;
@@ -186,14 +216,25 @@ void btn_menu(){
             }
           }  
       }
+      if(currentPower0 == LOW){
+        if(modeSelect == 1 && modeControl == 0){
+          if(millis() - incskinTime > 2000){
+            displaysetTemp = displaysetTemp + 0.02;
+            if(displaysetTemp >= 38){
+              displaysetTemp = 38;
+            }
+          }
+        }
+      }
+      if(currentPower0 == HIGH){
+        incskinTime = millis();
+      } 
 
-    lastPower1 = currentPower1;
-    currentPower1 = digitalRead(decTemp);
       if(lastPower1 == HIGH && currentPower1 == LOW){
         if(modeSelect == 1 && modeControl == 0){ 
           displaysetTemp = displaysetTemp - 0.1;
-            if(displaysetTemp <= 31){
-                displaysetTemp = 31;
+            if(displaysetTemp <= 25){
+                displaysetTemp = 25;
             }
           }
         if(modeSelect == 2 && modeControl == 0){
@@ -203,9 +244,22 @@ void btn_menu(){
               }
         }               
       }
+      if(currentPower1 == LOW){
+        if(modeSelect == 1 && modeControl == 0){
+          if(millis() - decskinTime > 2000){  
+            displaysetTemp = displaysetTemp - 0.02;
+            if(displaysetTemp <= 25){
+              displaysetTemp = 25;
+            }
+          }
+        }  
+      }
+      if(currentPower1 == HIGH){
+        decskinTime = millis();
+      }
+  //END INCREMENT AND DECREMENT BUTTON  
 
-    lastPower2 = currentPower2;
-    currentPower2 = digitalRead(settempBtn);
+  //SET CONTROL BUTTON
       if(lastPower2 == HIGH && currentPower2 == LOW){
         if(modeSelect == 1){  
           setTemp = setTemp + 1;
@@ -231,9 +285,27 @@ void btn_menu(){
           }
         }
       }
+  //END SET CONTROL BUTTON  
+  }
 
-    lastPower3 = currentPower3;
-    currentPower3 = digitalRead(startTimer);
+  if(debugMode == 1){
+  //INCREMENT & DECREMENT DEBUG MODE  
+    if(lastPower0 == HIGH && currentPower0 == LOW){
+      holdSkin = holdSkin + 0.1;
+      if(holdSkin >= 38.5){
+        holdSkin = 38.5;
+      }
+    }
+    if(lastPower1 == HIGH && currentPower1 == LOW){
+      holdSkin = holdSkin - 0.1;
+      if(holdSkin <= 25){
+        holdSkin = 25;
+      }
+    }
+  }
+
+
+  //SET AND HOLD TIMER MODE
     if(lastPower3 == HIGH && currentPower3 == LOW){
         settimerMode++;
         if(settimerMode == 1){
@@ -258,17 +330,68 @@ void btn_menu(){
         timeMode = 0;
       }
     }
+  //END SET AND HOLD TIMER MODE
 
-    lastPower4 = currentPower4;
-    currentPower4 = digitalRead(resetTimer);
+  //RESET TIMER BUTTON
     if(lastPower4 == HIGH && currentPower4 == LOW){
        settimerMode = 0;
        timeMode = 0;
     }
-}
+  //END RESET TIMER BUTTON
 
+  //DEBUG MODE BUTTON 
+    if(currentPower4 == LOW){
+      if(millis() - debugTimer > 7000 && debugMode == 0){
+        holdSkin = skinTemp;
+        debugMode = 1;
+        timeMode = 0;
+        debugTimer = millis();
+      }
+      else if(millis() - debugTimer > 7000 && debugMode == 1){
+        sumSkin = holdSkin - skinTemp;
+        debugMode = 0;
+        debugTimer = millis;
+      }
+    }
+  //END DEBUG MODE BUTTON
+
+  //SILENCE ALARM BUTTON
+    if(lastPower6 == HIGH && currentPower6 == LOW){
+      k = millis();
+      l = millis();
+      if(millis() - k < 60000){
+        sunyiValue = 1;
+        digitalWrite = (silenceLed, LOW);
+      }
+      if(millis() - l > 350 && i == 0){
+        last_sunyi_value = 1;
+        i = 1;
+        l = millis();
+      }
+    }
+    if(millis() - l > 350 && i == 1){
+      last_sunyi_value = 0;
+      i = 0;
+      l = millis();
+    }
+    if(millis() - k > 60000){
+      sunyiValue = 0;
+      digitalWrite = (silenceLed, HIGH);
+      k = millis();
+    } 
+  //END SILENCE ALARM BUTTON
+}
+/*end fucntion of each button session*/
+
+
+/*value of  each digits seven segment*/
 void digit_value(){
+  if(debugMode == 0){
     displayskinTemp = skinTemp;
+  }
+  if(debugMode == 1){
+    displayskinTemp = holdSkin;
+  }
     digit1 = displayskinTemp / 10;
     digit2 = displayskinTemp - (digit1 * 10);
     digit3 = (displayskinTemp * 10 - (digit1 * 100) - (digit2 * 10));
@@ -296,29 +419,33 @@ void digit_value(){
     }
     if(displayTimer3 >= 10){
         digit12 = (displayTimer3)-((displayTimer3/10)* 10);
-    }    
+    } 
+  /*end value of each digits*/   
 }
 
-void digit_display(){
+/*Displaying value to each seven segment digits*/ 
+void digit_display(){ 
   digit_value();
-  //display skin Temp  
-  lc.setDigit(1, 1, digit1, false);    
-  lc.setDigit(1, 5, digit2, true);     
-  lc.setDigit(1, 7, digit3, false);
+  //display skin Temp
+  if(debugMode == 0){   
+    lc.setDigit(1, 1, digit1, false);    
+    lc.setDigit(1, 5, digit2, true);     
+    lc.setDigit(1, 7, digit3, false);
 
   //display set skin temp
-  lc.setDigit(1, 6, digit4, false);    
-  lc.setDigit(1, 4, digit5, true);     
-  lc.setDigit(1, 0, digit6, false);
+    lc.setDigit(1, 6, digit4, false);    
+    lc.setDigit(1, 4, digit5, true);     
+    lc.setDigit(1, 0, digit6, false);
 
   //displayTimer
-  lc.setDigit(0, 1, digit7, false);    
-  lc.setDigit(0, 5, digit8, true);     
-  lc.setDigit(0, 7, digit9, false);
-  lc.setDigit(0, 3, digit10, false);    
-  lc.setDigit(0, 2, digit11, true);     
-  lc.setDigit(0, 6, digit12, false);  
+    lc.setDigit(0, 1, digit7, false);    
+    lc.setDigit(0, 5, digit8, true);     
+    lc.setDigit(0, 7, digit9, false);
+    lc.setDigit(0, 3, digit10, false);    
+    lc.setDigit(0, 2, digit11, true);     
+    lc.setDigit(0, 6, digit12, false);  
   
+  //10 Segment bar
   heatedPower = map(heaterPwm, 0, 255, 0, 10);
     for(int thisled = 0; thisled < 10; thisled++){
       if(thisled < heatedPower){
@@ -327,9 +454,28 @@ void digit_display(){
       else{
         digitalWrite(graphpin[thisled], HIGH);
       }
-    }  
-}
+    }
+ } 
 
+ if(debugMode == 0){
+  //display skin temp debug Mode
+    lc.setDigit(1, 1, digit1, false);    
+    lc.setDigit(1, 5, digit2, true);     
+    lc.setDigit(1, 7, digit3, false);
+
+  //Display timer debug Mode
+    lc.setChar(0, 1, 'c', false);    
+    lc.setChar(0, 5, 'a', false);     
+    lc.setChar(0, 7, 'l', false);
+    lc.setChar(0, 3, '-', false);    
+    lc.setChar(0, 2, '-', false);     
+    lc.setChar(0, 6, '-', false);  
+ } 
+}
+/*End Displaying value of each 7 segment digits*/
+
+
+/*Read Skin Temperature from atTiny1616*/
 void read_skin_temperature(){
   float read_skin_temp0 = Radiant_Warmer.get_value_sensor(adcValue);
   if(read_skin_temp0 > 21){
@@ -342,9 +488,13 @@ void read_skin_temperature(){
   if(read_skin_temp0 <= 21){
     skinTemp = 0;
   }
+/*end Read skin temperature*/  
 }
 
+
+/*Control Function*/
 void run_control(){
+//Non PID Control each delta temp has a value of PWM
   heaterPwm = Radiant_Warmer.get_value_heat(setPoint, modeControl, babyskinTemp, heatedPower);
   set_pwm(heaterPwm);
 }
@@ -353,6 +503,7 @@ void set_pwm(uint8_t heat){
   analogWrite(heaterPin, heat);
 }
 
+//PID Control only used when temperature rise from 0 to setpoint
 void PID_control(){
   errorSkin = (setPoint*10) - (babyskinTemp*10);
   if(error0 == 0 && error1 == 0 && error2 == 0 && error3 == 0){
@@ -376,9 +527,12 @@ void PID_control(){
     digitalWrite(relayPin, LOW);
   }
 }
+/*End Control Function*/
 
+/*atTiny1616 Communication*/
+//Generating 10 pulse with 2ms time each high and low condition
 void generate_pulse(){
-  if(start == 0 && pulsa <= 9){ //20
+  if(start == 0 && pulsa <= 9){ //10
     if(millis() - timePulse > 2 && highState == 0){
       digitalWrite(clkOut, HIGH);     
       timePulse = millis();
@@ -402,8 +556,9 @@ void generate_pulse(){
   }  
 }
 
+//Sampling data each high pulse condition
 void sample_data(){
-    if(pulsa > 9){ //20
+    if(pulsa > 9){ //10
       digitalWrite(clkOut, LOW);
         if(millis() - generateData > 100 && sampleState == 0){
           for(halfBit = 0; halfBit < 10; halfBit++){
@@ -425,8 +580,10 @@ void sample_data(){
         }
     }  
 }
+/*End atTiny1616 Communication*/
 
-void read_error(){
+/*Error and Alarm Triggering Session*/
+void read_error(){         
   errorSkin = (setPoint*10) - (babyskinTemp*10);
   //Power Failure
   // powerIn = digitalRead();
@@ -467,8 +624,97 @@ void read_error(){
       }
     }
   }
-}
 
+  // LED Triggered 
+  //probefail
+  if(error0 == 1){
+    digitalWrite(probefailLed, LOW);
+    }
+  if(error0 == 0){
+    digitalWrite(probefailLed, HIGH);
+    sAlarm[0] = 1;
+  }
+  //tempdev
+  if(error1 == 0){
+    digitalWrite(devtempLed, LOW);
+  }
+  if(error1 == 1){
+    digitalWrite(devtempLed, HIGH);
+    sAlarm[1] = 1;
+  }
+  //high temp
+  if(error2 == 1){
+    digitalWrite(overtempLed, LOW);
+  }
+  if(error2 == 0){
+    digitalWrite(overtempLed, HIGH);
+    sAlarm[2] = 0;
+  }
+
+  /*Silent Alarm function*/
+  if(error0 == 1 && sAlarm[0] == 1){
+    alarm[0] = 1;
+  }
+  if(error1 == 1 && sAlarm[1] == 1){
+    alarm[1] = 1;
+  }
+  if(error2 == 1 && sAlarm[2] == 1){
+    alarm[2] = 1;
+  }
+  if(error3 == 1 && sAlarm[3] == 1){
+    alarm[3] = 1;
+  }
+  //SIlent button triggered
+  if(alarm[0] == 1 && last_sunyi_value == 1){
+    sAlarm[0] = 0;
+    alarm[0] = 0;
+  }
+  if(alarm[1] == 1 && last_sunyi_value == 1){
+    sAlarm[1] = 0;
+    alarm[1] = 0;
+  }  
+  if(alarm[2] == 1 && last_sunyi_value == 1){
+    sAlarm[2] = 0;
+    alarm[2] = 0;
+  }
+  if(alarm[3] == 1 && last_sunyi_value == 1){
+    sAlarm[3] = 0;
+    alarm[3] = 0;
+  }  
+  // if(alarm[4] == 1 && last_sunyi_value == 1){
+  //   sAlarm[4] = 0;
+  //   alarm[4] = 0;
+  // }
+  // check error again after silent btn triggered
+  for(o=0; o<4;o++){
+    if(alarm[o] == 1){
+      sirenAlarm = 1;
+      alarmValue++;
+      if(alarmValue >= 6000){
+        alarmValue = 6000;
+        alarmValue2 = 1;
+      }
+    }
+    if(last_sunyi_value == 1){
+      sirenAlarm = 0;
+      alarmValue = 0;
+      alarmValue2 = 0;
+    }
+    if(sunyiValue == 0){
+      for(uint8_t j=0; j<4; j++){
+        sAlarm[j] = 1;
+      }
+    }
+    if(error0 == 0 && error1 == 0 && error2 == 0 && error3 == 0){
+      alarmValue = 0;
+      alarmValue2 = 0;
+      sirenAlarm = 0;
+    }
+  }
+}
+/*end of error and alarm triggering session*/
+
+/*Real time clock session*/
 void generate_rtc(uint8_t nowSecond, uint8_t nowMinute, uint8_t nowHours){
     // DateTime now  = rtc.now();
     if(timeMode == 0){
@@ -487,10 +733,15 @@ void generate_rtc(uint8_t nowSecond, uint8_t nowMinute, uint8_t nowHours){
             displayTimer3 = holdTimer3;
     }
 }
+/*end RTC session*/
 
 
 void setup(){
+  analogReference(EXTERNAL);
   // rtc.begin();  
+  timer0.setInterval(1000, read_error);
+  timer2.setInterval(1000, read_skin_temperature);
+  timer3.setInterval(1000, PID_control);
   lc.setIntensity(0, 2);
   lc.setIntensity(1, 2);
   lc.clearDisplay(0);
@@ -539,9 +790,15 @@ void setup(){
   delay(2000);
 }
 
-
 void loop(){
+  generate_pulse();
+  sample_data();
+  digit_display();
   generate_rtc(timeSecond, timeMinute, timeHours);
+  btn_menu();
+  timer0.run(); //read error
+  timer2.run(); //read skin temperature
+  timer3.run(); //PID Control
 }
 
  //interrupt routine
