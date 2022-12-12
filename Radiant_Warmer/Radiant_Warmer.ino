@@ -594,7 +594,7 @@ void alarm_control(){
 /*atTiny1616 Communication*/
 //Generating 10 pulse with 2ms time each high and low condition
 void generate_pulse(){
-  if(start == 0 && pulsa <= 9){ //10
+  if(start == 0 && pulsa <= 11){ //12
     if(millis() - timePulse > 2 && highState == 0){
       digitalWrite(clkOut, HIGH);     
       timePulse = millis();
@@ -620,11 +620,11 @@ void generate_pulse(){
 
 //Sampling data each high pulse condition
 void sample_data(){
-    if(pulsa > 9){ //10
+    if(pulsa > 11){ //12
       digitalWrite(clkOut, LOW);
         if(millis() - generateData > 100 && sampleState == 0){
-          for(halfBit = 0; halfBit < 10; halfBit++){
-            bitWrite(dataSensor, 9- halfBit , dataArray[halfBit]);
+          for(halfBit = 0; halfBit < 12; halfBit++){
+            bitWrite(dataSensor, 11- halfBit , dataArray[halfBit]);
             Serial.print(dataArray[halfBit]);
           }
             Serial.print("-");
