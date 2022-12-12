@@ -1,7 +1,7 @@
 #define dataOut 4 //PB5
 #define clkIn 5  //PB4
-#define highSensor 16 //PA6
-#define lowSensor 0 //PA7
+#define highSensor 16 //PA3
+#define lowSensor 0 //PA4
 
 //test
 int a;
@@ -48,7 +48,7 @@ void send_data(){
      Serial.print(b);
      Serial.println("-");
   }
-  if(b > 20){
+  if(b > 10){ //20
      b = 0;
      lowvar = 1;
      current = 0;
