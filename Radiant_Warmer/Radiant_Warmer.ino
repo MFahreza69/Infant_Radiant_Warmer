@@ -208,7 +208,7 @@ void btn_menu(){
   //END MODE SELECT BUTTON
 
   //INCREMENT AND DECREMENT BUTTON
-      if(lastPower0 == HIGH && currentPower0 == LOW){
+    if(lastPower0 == HIGH && currentPower0 == LOW){
         if(modeSelect == 1 && modeControl == 0){
            displaysetTemp = displaysetTemp + 0.1;
            if(displaysetTemp >= 38){
@@ -222,7 +222,7 @@ void btn_menu(){
             }
           }  
       }
-      if(currentPower0 == LOW){
+    if(currentPower0 == LOW){
         if(modeSelect == 1 && modeControl == 0){
           if(millis() - incskinTime > 2000){
             displaysetTemp = displaysetTemp + 0.02;
@@ -231,12 +231,12 @@ void btn_menu(){
             }
           }
         }
-      }
-      if(currentPower0 == HIGH){
+    }
+    if(currentPower0 == HIGH){
         incskinTime = millis();
       } 
 
-      if(lastPower1 == HIGH && currentPower1 == LOW){
+    if(lastPower1 == HIGH && currentPower1 == LOW){
         if(modeSelect == 1 && modeControl == 0){ 
           displaysetTemp = displaysetTemp - 0.1;
             if(displaysetTemp <= 34){
@@ -250,7 +250,7 @@ void btn_menu(){
               }
         }               
       }
-      if(currentPower1 == LOW){
+    if(currentPower1 == LOW){
         if(modeSelect == 1 && modeControl == 0){
           if(millis() - decskinTime > 2000){  
             displaysetTemp = displaysetTemp - 0.02;
@@ -260,13 +260,13 @@ void btn_menu(){
           }
         }  
       }
-      if(currentPower1 == HIGH){
+    if(currentPower1 == HIGH){
         decskinTime = millis();
-      }
+    }
   //END INCREMENT AND DECREMENT BUTTON  
 
   //SET CONTROL BUTTON
-      if(lastPower2 == HIGH && currentPower2 == LOW){
+    if(lastPower2 == HIGH && currentPower2 == LOW){
         if(modeSelect == 1){  
           setTemp = setTemp + 1;
               if(setTemp == 1){
@@ -375,15 +375,15 @@ void btn_menu(){
         l = millis();
       }
     }
-    if(millis() - l > 350 && i == 1){
-      last_sunyi_value = 0;
-      i = 0;
-      l = millis();
+      if(millis() - l > 350 && i == 1){
+        last_sunyi_value = 0;
+        i = 0;
+        l = millis();
     }
-    if(millis() - k > 60000){
-      sunyiValue = 0;
-      digitalWrite(silenceLed, HIGH);
-      k = millis();
+      if(millis() - k > 60000){
+        sunyiValue = 0;
+        digitalWrite(silenceLed, HIGH);
+        k = millis();
     } 
   //END SILENCE ALARM BUTTON
 
@@ -447,18 +447,6 @@ void digit_value(){
 void digit_display(){ 
   digit_value();
   if(debugMode == 0){  
-    if(modeSelect == 1 || modeControl == 1){
-    //display set skin temp
-      lc.setDigit(1, 6, digit4, false);    
-      lc.setDigit(1, 4, digit5, true);     
-      lc.setDigit(1, 0, digit6, false);
-    }
-    if(modeSelect == 2 || modeControl == 2){
-      lc.setChar(1, 6, '-', false);
-      lc.setChar(1, 4, '-', true);
-      lc.setChar(1, 0, '-', false);
-    } 
-
     //display skin Temp
     lc.setDigit(1, 1, digit1, false);    
     lc.setDigit(1, 5, digit2, true);     
@@ -470,7 +458,19 @@ void digit_display(){
     lc.setDigit(0, 7, digit9, false);
     lc.setDigit(0, 3, digit10, false);    
     lc.setDigit(0, 2, digit11, true);     
-    lc.setDigit(0, 6, digit12, false);  
+    lc.setDigit(0, 6, digit12, false);
+
+    if(modeSelect == 1 || modeControl == 1){
+    //display set skin temp
+      lc.setDigit(1, 6, digit4, false);    
+      lc.setDigit(1, 4, digit5, true);     
+      lc.setDigit(1, 0, digit6, false);
+    }
+    if(modeSelect == 2 || modeControl == 2){
+      lc.setChar(1, 6, '-', false);
+      lc.setChar(1, 4, '-', true);
+      lc.setChar(1, 0, '-', false);
+    }   
   
   //10 Segment bar
   heatedPower = map(heaterPwm, 0, 255, 0, 10);
@@ -504,16 +504,17 @@ void digit_display(){
 
 /*Read Skin Temperature from atTiny1616*/
 void read_skin_temperature(){
-  float read_skin_temp0 = Radiant_Warmer.get_value_sensor(adcValue);
-  if(read_skin_temp0 > 21){
-    convertSkin = (read_skin_temp0*100);
-    babyskinTemp = (float(convertSkin)/100);
+  // float read_skin_temp0 = Radiant_Warmer.get_value_sensor(adcValue);
+  float read_skin_temp = (dataSensor/100);
+  if(read_skin_temp > 21){
+    convertSkin = (read_skin_temp);
+    // babyskinTemp = (float(convertSkin)/100);
     if(millis()-tcal > 1000){
       skinTemp = babyskinTemp;
-      // tcal = millis();
+      tcal = millis();
     }
   }
-  if(read_skin_temp0 <= 21){
+  if(read_skin_temp <= 21){
     skinTemp = 0;
   }
 /*end Read skin temperature*/  
@@ -522,7 +523,7 @@ void read_skin_temperature(){
 
 /*Control Function*/
 void run_control(){
-//Non PID Control each delta temp has a value of PWM
+//Non PID Control each delta temperature has a value of PWM
   heaterPwm = Radiant_Warmer.get_value_heat(setPoint, modeControl, babyskinTemp, heatedPower);
   set_pwm(heaterPwm);
 }
@@ -650,7 +651,6 @@ void read_error(){
   if(alarmRst == 0){
     //Power Failure
     // powerIn = digitalRead();
-    
     if(millis() - startup > 5000){
       if(rstAlarm == 0){
       //Probe Missing
@@ -854,7 +854,7 @@ void setup(){
   TCNT0 = 0;        //clear timer 0 interrupt 
   TCCR0 = (1 << WGM01)|(1 << CS02)|(1 << CS01)|(0 << CS00); //prescaler 256
   while(ASSR & ((1 << TCN0UB)|(1 << OCR0UB)|(1 << TCR0UB))); //wait tcn and tcr cleared
-  OCR0 = 1.28; //antara 128/1.28 
+  OCR0 = 1.28; //antara 128/1.28 (128 = 1hz, 1.28 = 100hz)
   TIFR = (1 << OCF0); //clear interrupt flag
   TIMSK = (1 << OCIE0);
   sei();
