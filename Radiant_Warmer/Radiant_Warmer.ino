@@ -208,6 +208,7 @@ void btn_menu(){
   //END MODE SELECT BUTTON
 
   //INCREMENT AND DECREMENT BUTTON
+    //AUTO
     if(lastPower0 == HIGH && currentPower0 == LOW){
         if(modeSelect == 1 && modeControl == 0){
            displaysetTemp = displaysetTemp + 0.1;
@@ -215,6 +216,7 @@ void btn_menu(){
               displaysetTemp = 38;
             }
         }
+        //manual
         if(modeSelect == 2 && modeControl == 0){
             manualPower = manualPower + 1;
             if(manualPower > 10){
@@ -282,12 +284,28 @@ void btn_menu(){
               }            
         }
         if(modeSelect == 2){
+          setTemp = setTemp + 1;
           if(setTemp == 1){
             modeControl = 1;
-            heatedPower = manualPower;
+            // heatedPower = manualPower;
           }
           if(setTemp == 0){
             modeControl = 0;
+          }
+          if(setTemp > 1){
+            setTemp = 0;
+          }
+        }
+        if(modeSelect == 3){
+          setTemp = setTemp + 1;
+          if(setTemp == 1){
+            modeControl = 3;
+          }
+          if(setTemp == 0){
+            modeControl = 0;
+          }
+          if(setTemp > 1){
+            setTemp = 0;
           }
         }
       }
@@ -460,28 +478,46 @@ void digit_display(){
     lc.setDigit(0, 2, digit11, true);     
     lc.setDigit(0, 6, digit12, false);
 
-    if(modeSelect == 1 || modeControl == 1){
+    if(modeSelect == 1){
     //display set skin temp
       lc.setDigit(1, 6, digit4, false);    
       lc.setDigit(1, 4, digit5, true);     
       lc.setDigit(1, 0, digit6, false);
+
+    //10 Segment bar on automode
+      heatedPower = map(heaterPwm, 0, 255, 0, 10);
+      for(int thisled = 0; thisled < 10; thisled++){
+        if(thisled < heatedPower){
+          digitalWrite(graphpin[thisled], LOW);
+        }
+        else{
+          digitalWrite(graphpin[thisled], HIGH);
+        }
+      } 
     }
-    if(modeSelect == 2 || modeControl == 2){
+
+    if(modeSelect == 2){
       lc.setChar(1, 6, '-', false);
       lc.setChar(1, 4, '-', true);
       lc.setChar(1, 0, '-', false);
-    }   
-  
-  //10 Segment bar
-  heatedPower = map(heaterPwm, 0, 255, 0, 10);
-    for(int thisled = 0; thisled < 10; thisled++){
-      if(thisled < heatedPower){
-        digitalWrite(graphpin[thisled], LOW);
-      }
-      else{
-        digitalWrite(graphpin[thisled], HIGH);
+      
+      //10 segment bar in manual mode
+      heatedPower = manualPower;
+      for(int thisled = 0; thisled < 10; thisled++){
+        if(thisled < heatedPower){
+          digitalWrite(graphpin[thisled], LOW);
+        }
+        else{
+          digitalWrite(graphpin[thisled], HIGH);
+        }
       }
     }
+
+    if(modeSelect == 3){
+      lc.setChar(1, 6, 'p', false);
+      lc.setChar(1, 4, 'r', true);
+      lc.setChar(1, 0, 'e', false);
+    }   
  } 
 
  if(debugMode == 1){
@@ -854,7 +890,7 @@ void setup(){
   TCNT0 = 0;        //clear timer 0 interrupt 
   TCCR0 = (1 << WGM01)|(1 << CS02)|(1 << CS01)|(0 << CS00); //prescaler 256
   while(ASSR & ((1 << TCN0UB)|(1 << OCR0UB)|(1 << TCR0UB))); //wait tcn and tcr cleared
-  OCR0 = 1.28; //antara 128/1.28 (128 = 1hz, 1.28 = 100hz)
+  OCR0 = 1.28; //antara 128/1.28 pres 256 (128 = 1hz, 1.28 = 100hz)
   TIFR = (1 << OCF0); //clear interrupt flag
   TIMSK = (1 << OCIE0);
   sei();
