@@ -18,6 +18,8 @@
 #define preheatLed            29 /*PC1*/
 #define startTimer            24
 #define resetTimer            42
+#define microLed1             26
+#define microLed2             27
 #define autoLed               28
 #define manualLed             25
 #define modeBtn               30
@@ -29,6 +31,7 @@
 #define powerfailLed          50
 #define overtempLed           44
 #define probefailLed          43
+#define batteryPin            46
 LedControl lc = LedControl(13, 5, 6, 2);
 int graphpin[]={31, 32, 33, 34, 35, 37, 38, 39, 40, 41};
 /*End Define Pins*/
@@ -100,6 +103,7 @@ bool preheatMode;
 bool autoMode;
 bool manualMode;
 uint8_t modeControl;
+uint16_t vbattery;
 
 //sensor and control variable
 float babyskinTemp;
@@ -115,7 +119,7 @@ unsigned long startup;
 uint8_t loopTimer;
 uint8_t manualPower;
 uint32_t adcValue;
-int convertSkin;
+float convertSkin;
 float errorSkin;
 uint8_t steadytime;
 uint8_t timeSecond;
@@ -137,7 +141,7 @@ unsigned long generateData;
 bool sampleState = 0;
 uint16_t dataSensor;
 uint8_t halfBit;
-int dataArray[10];
+int dataArray[13];
 bool start = 1;
 unsigned long k;
 unsigned long l;
@@ -540,7 +544,6 @@ void digit_display(){
 
 /*Read Skin Temperature from atTiny1616*/
 void read_skin_temperature(){
-  // float read_skin_temp0 = Radiant_Warmer.get_value_sensor(adcValue);
   float read_skin_temp = (dataSensor/100);
   if(read_skin_temp > 21){
     convertSkin = (read_skin_temp);
@@ -629,9 +632,9 @@ void alarm_control(){
 /*End Control and Alarm Function*/
 
 /*atTiny1616 Communication*/
-//Generating 10 pulse with 2ms time each high and low condition
+//Generating 12 pulse with 2ms time each high and low condition
 void generate_pulse(){
-  if(start == 0 && pulsa <= 11){ //12
+  if(start == 0 && pulsa <= 12){ //13
     if(millis() - timePulse > 2 && highState == 0){
       digitalWrite(clkOut, HIGH);     
       timePulse = millis();
@@ -657,11 +660,11 @@ void generate_pulse(){
 
 //Sampling data each high pulse condition
 void sample_data(){
-    if(pulsa > 11){ //12
+    if(pulsa > 12){ //13
       digitalWrite(clkOut, LOW);
         if(millis() - generateData > 100 && sampleState == 0){
-          for(halfBit = 0; halfBit < 12; halfBit++){
-            bitWrite(dataSensor, 11- halfBit , dataArray[halfBit]);
+          for(halfBit = 0; halfBit < 13; halfBit++){
+            bitWrite(dataSensor, 12- halfBit , dataArray[halfBit]);
             Serial.print(dataArray[halfBit]);
           }
             Serial.print("-");
@@ -685,7 +688,18 @@ void sample_data(){
 void read_error(){         
   errorSkin = (setPoint*10) - (babyskinTemp*10);
   if(alarmRst == 0){
+    //vbat sense
+    vbattery = analogRead(batteryPin);
+
     //Power Failure
+    // bool acDetect = digitalWrite(acdetectPin);
+    // if(acDetect == HIGH){
+    //   error4 == 0;
+    // }
+    // if(acDetect == LOW){
+    //   error4 == 0;
+    // }
+
     // powerIn = digitalRead();
     if(millis() - startup > 5000){
       if(rstAlarm == 0){
@@ -865,6 +879,7 @@ void setup(){
   pinMode(silenceAlarm, INPUT);
   pinMode(resetAlarm, INPUT);
 
+  pinMode(microLed1, OUTPUT);
   pinMode(preheatLed, OUTPUT);
   pinMode(autoLed, OUTPUT);
   pinMode(manualLed, OUTPUT);
@@ -875,7 +890,10 @@ void setup(){
   pinMode(powerfailLed, OUTPUT);
   pinMode(overtempLed, OUTPUT);
   pinMode(probefailLed, OUTPUT);
-
+  pinMode(relayPin, OUTPUT);
+  digitalWrite(microLed1, LOW);
+  digitalWrite(relayPin, LOW);
+  
   for(uint8_t thisled = 0; thisled < 10; thisled++){
     pinMode(graphpin[thisled], OUTPUT);
   }
@@ -886,7 +904,7 @@ void setup(){
   cli();
   TCCR0 = 0;        //stop timer 0
   TIMSK = 0;        //disable timer 0 interrupt
-  ASSR |= 1 << AS0; //select asynchronous operation timer0
+  ASSR = (1 << AS0); //select asynchronous operation timer0
   TCNT0 = 0;        //clear timer 0 interrupt 
   TCCR0 = (1 << WGM01)|(1 << CS02)|(1 << CS01)|(0 << CS00); //prescaler 256
   while(ASSR & ((1 << TCN0UB)|(1 << OCR0UB)|(1 << TCR0UB))); //wait tcn and tcr cleared
@@ -903,8 +921,9 @@ void loop(){
   digit_display();
   generate_rtc(timeSecond, timeMinute, timeHours);
   btn_menu();
+  read_skin_temperature();
   timer0.run(); //read error
-  timer2.run(); //read skin temperature
+  // timer2.run(); //read skin temperature
   timer3.run(); //PID Control
 }
 
