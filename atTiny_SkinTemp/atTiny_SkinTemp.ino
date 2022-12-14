@@ -16,7 +16,7 @@ uint8_t current = 0;
 uint8_t last = 0;
 uint16_t sense1;
 uint16_t sense2;
-String dataArray3[12];
+String dataArray3[13];
 int r = random(0, 1023);
 
 
@@ -47,7 +47,7 @@ void send_data(){
      Serial.print(b);
      Serial.println("-");
   }
-  if(b > 12){ //20
+  if(b > 13){ //20
      b = 0;
      lowvar = 1;
      current = 0;
@@ -68,23 +68,37 @@ void send_data(){
 
 /*Select probe sensor 17Kohm / 2K2ohm*/
 void which_sensor(){
-  sense1 = analogRead(highSensor);
-  sense2 = analogRead(lowSensor);
+  sense1 = analogRead(highSensor); //17kohm
+  sense2 = analogRead(lowSensor); // 2,2kohm
   uint16_t avr_temp;
   float all_temp;
+  float sendTemp;
+  int convertTemp;
   if(sense1 >= 1023 && sense2 != 0){
     // dataSensor = sense2;
     avr_temp = sense2;
     all_temp = ((-0.001*(pow(avr_temp, 2))) + (18*avr_temp) + 24125)/1000;
+    sendTemp = all_temp*100;
+    convertTemp = sendTemp;  
       if(avr_temp <= 20){
         dataSensor = 0;
       }
       else{
-        dataSensor = all_temp;
+        dataSensor = convertTemp;
       }
   }
   else if(sense1 < 1023 && sense2 != 0){
-    dataSensor = sense1;
+    // dataSensor = sense1;
+    avr_temp = sense1;
+    all_temp = /*pers 17k ohm*/;
+    sendTemp = all_temp*100;
+    convertTemp = sendTemp;
+      if(avr_temp <= 20){
+        dataSensor = 0;
+      }
+      else{
+        dataSensor = convertTemp;
+      }
   }
   else if(sense1 == 0 && sense2 == 0){
     dataSensor = 0;
@@ -100,6 +114,7 @@ void setup(){
   pinMode(clkIn, INPUT);
   pinMode(highSensor, INPUT);
   pinMode(lowSensor, INPUT);
+  which_sensor();
   convert_tobinary(dataSensor);
 //    delay(1000);
     b = 0;
