@@ -19,28 +19,28 @@ uint8_t Radiant::get_value_heat(int set_temp, int mode, float skinTemp, float po
                 if(err_skin < -0.1 && err_skin > -999){
                     return 10;
                 }
-                if(err_skin < 150 && err_skin > 70.5){
-                    return 220;
+                if(err_skin < 150 && err_skin >= 70.5){
+                    return 180;
                 }
-                if(err_skin < 70.5 && err_skin > 50.5){
-                    return 200;
-                }
-                if(err_skin < 50.5 && err_skin > 40.5){
+                if(err_skin < 70.5 && err_skin >= 50.5){
                     return 170;
                 }
-                if(err_skin < 40.5 && err_skin > 20.5){
+                if(err_skin < 50.5 && err_skin >= 40.5){
+                    return 160;
+                }
+                if(err_skin < 40.5 && err_skin >= 20.5){
                     return 150;
                 }
-                if(err_skin < 20.5 && err_skin > 10.5){
+                if(err_skin < 20.5 && err_skin >= 10.5){
                     return 120;
                 }
-                if(err_skin < 10.5 && err_skin > 5.5){
+                if(err_skin < 10.5 && err_skin >= 5.5){
                     return 110;
                 }
-                if(err_skin < 5.5 && err_skin > 1.5){
+                if(err_skin < 5.5 && err_skin >= 1.5){
                     return 100;
                 }
-                if(err_skin < 1.5 && err_skin > -0.1){
+                if(err_skin < 1.5 && err_skin >= -0.1){
                     return 92;
                 }                                                                                                            
             }   
@@ -55,21 +55,49 @@ uint8_t Radiant::get_value_heat(int set_temp, int mode, float skinTemp, float po
             return heatPower;
         }
     }
-    if(mode == 3){}
-    else{return 0;}
+    if(mode == 3){
+        if(skinTemp < 29){
+            return 90;
+        }
+        if(skinTemp < 33.5 && skinTemp >= 29){
+            return 80;
+        }
+        if(skinTemp >= 33.5){
+            return 0;
+        }
+    }
+    else{
+        return 0;
+        }
 
 }
 
-float Radiant::get_value_sensor(int adcSense){
+float Radiant::get_value_sensor(int adcSense, int whichSensor){
     float avr_temp = 0;
-    avr_temp = adcSense;
-    all_temp = ((-0.001*(pow(avr_temp, 2))) + (18*avr_temp) + 24125)/1000; 
-        if(avr_temp <= 20){
-          return all_temp = 0;
-        }
-        else{
-          return all_temp;
-        }
+   if(whichSensor == 0){ 
+     avr_temp = adcSense;
+     all_temp = ((-0.001*(pow(avr_temp, 2))) + (18*avr_temp) + 24125)/1000; 
+     if(avr_temp <= 20){
+        return all_temp = 0;
+     }
+     else{
+        return all_temp;
+     }
+   }
+
+   if(whichSensor == 1){
+     avr_temp = adcSense;
+     all_temp = (0.0269*avr_temp) + 18.426;
+    //  all_temp = ((0.007*(pow(avr_temp, 2)))+(13.9*avr_temp) + 19801)/1000;
+     if(avr_temp <= 20){
+       return all_temp = 0;
+     }
+     else{
+       return all_temp;
+     }
+   }
+
+
 }
 
 float Radiant::get_error_data(){
